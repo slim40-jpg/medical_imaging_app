@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block content %}
+<h3>Dessinez un rectangle autour de la zone d'intérêt</h3>
+<p class="text-muted">Cliquez et faites glisser pour dessiner.</p>
+
+<div class="row">
+  <div class="col-md-8">
+    <canvas id="canvas" style="border:2px solid #ccc; cursor: crosshair; max-width:100%;"></canvas>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <h5>Instructions</h5>
+        <ul class="small">
+          <li>Entourez l'organe ou la lésion.</li>
+          <li>Le rectangle ne doit pas être parfait.</li>
+          <li>Cliquez sur "Segmenter" une fois terminé.</li>
+        </ul>
+        <button id="segment-btn" class="btn btn-success w-100" disabled>Segmenter avec MedSAM</button>
+        <div id="status" class="mt-2 text-muted small"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const img = new Image();
+  img.src = "{{ image_url }}";
+  
+  let isDrawing = false;
+  let startX, startY, endX, endY;
+  let box = null;
+
+  // On sécurise le nom du fichier avec des guillemets simples
+  const currentFilename = "{{ filename }}";
+
+  img.onload = () => {
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+  };
+
+  canvas.addEventListener('mousedown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    // Calcul des coordonnées en fonction de la taille réelle du canvas
+    startX = (e.clientX - rect.left) * (canvas.width / rect.width);
+    startY = (e.clientY - rect.top) * (canvas.height / rect.height);
+    isDrawing = true;
+    box = null;
+    document.getElementById('segment-btn').disabled = true;
+  });
+
+  canvas.addEventListener('mousemove', (e) => {
+    if (!isDrawing) return;
+    const rect = canvas.getBoundingClientRect();
+    endX = (e.clientX - rect.left) * (canvas.width / rect.width);
+    endY = (e.clientY - rect.top) * (canvas.height / rect.height);
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(startX, startY, endX - startX, endY - startY);
+  });
+
+  canvas.addEventListener('mouseup', () => {
+    isDrawing = false;
+    if (Math.abs(endX - startX) > 5 && Math.abs(endY - startY) > 5) {
+      const x1 = Math.min(startX, endX);
+      const y1 = Math.min(startY, endY);
+      const x2 = Math.max(startX, endX);
+      const y2 = Math.max(startY, endY);
+      box = [x1, y1, x2, y2];
+      document.getElementById('segment-btn').disabled = false;
+      document.getElementById('status').innerText = `Rectangle: [${Math.round(x1)}, ${Math.round(y1)}, ${Math.round(x2)}, ${Math.round(y2)}]`;
+    }
+  });
+
+  document.getElementById('segment-btn').addEventListener('click', async () => {
+    if (!box) return;
+    const btn = document.getElementById('segment-btn');
+    btn.disabled = true;
+    btn.innerText = "Segmentation en cours...";
+    document.getElementById('status').innerText = "Analyse en cours (cela peut prendre 30 sec)...";
+
+    try {
+      const response = await fetch('/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: currentFilename,
+          box: box
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Redirection
+      window.location.href = `/result?original=${encodeURIComponent(data.original)}&otsu=${encodeURIComponent(data.otsu)}&watershed=${encodeURIComponent(data.watershed)}&medsam_mask=${encodeURIComponent(data.medsam_mask)}&medsam_overlay=${encodeURIComponent(data.medsam_overlay)}`;
+    } catch (err) {
+      console.error(err);
+      alert("Erreur de communication avec le serveur. Vérifie la console (F12).");
+      btn.disabled = false;
+      btn.innerText = "Segmenter avec MedSAM";
+    }
+  });
+</script>
+{% endblock %}

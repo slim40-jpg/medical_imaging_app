@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<h3 class="mb-4">Comparaison des approches de segmentation</h3>
+
+<div class="row g-4">
+  <!-- Colonne 1 : Image Originale -->
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100 shadow-sm">
+      <div class="card-header bg-dark text-white text-center">Image Originale</div>
+      <div class="card-body text-center d-flex align-items-center">
+        <img src="{{ request.args.get('original') }}" class="img-fluid rounded" alt="Originale">
+      </div>
+    </div>
+  </div>
+
+  <!-- Colonne 2 : Seuillage Otsu -->
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100 shadow-sm">
+      <div class="card-header bg-primary text-white text-center">Seuillage d'Otsu (Conventionnel)</div>
+      <div class="card-body text-center d-flex align-items-center">
+        <img src="{{ request.args.get('otsu') }}" class="img-fluid rounded" alt="Otsu">
+      </div>
+    </div>
+  </div>
+
+  <!-- Colonne 3 : Watershed -->
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100 shadow-sm">
+      <div class="card-header bg-warning text-dark text-center">Watershed (Conventionnel)</div>
+      <div class="card-body text-center d-flex align-items-center">
+        <img src="{{ request.args.get('watershed') }}" class="img-fluid rounded" alt="Watershed">
+      </div>
+    </div>
+  </div>
+
+  <!-- Colonne 4 : MedSAM Masque -->
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100 shadow-sm">
+      <div class="card-header bg-success text-white text-center">MedSAM (Masque binaire)</div>
+      <div class="card-body text-center d-flex align-items-center">
+        <img src="{{ request.args.get('medsam_mask') }}" class="img-fluid rounded" alt="MedSAM Mask">
+      </div>
+    </div>
+  </div>
+
+  <!-- Colonne 5 : MedSAM Superposition -->
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100 shadow-sm">
+      <div class="card-header bg-success text-white text-center">MedSAM (Superposition)</div>
+      <div class="card-body text-center d-flex align-items-center">
+        <img src="{{ request.args.get('medsam_overlay') }}" class="img-fluid rounded" alt="MedSAM Overlay">
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mt-4 text-center">
+  <a href="{{ url_for('index') }}" class="btn btn-outline-primary">← Analyser une autre image</a>
+</div>
+{% endblock %}
