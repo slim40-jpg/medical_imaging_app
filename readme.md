@@ -1,5 +1,3 @@
-Voici le fichier `README.md` complet, structuré et prêt à être copié-collé en un seul bloc dans ton dossier `medSAM` :
-
 ````markdown
 # MedSAM - Segmentation Médicale Interactive et Comparative
 
